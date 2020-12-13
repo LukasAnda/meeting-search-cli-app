@@ -15,7 +15,14 @@ parse
 search
 import
 ```
- ---
+
+To start this project easily, I've included docker-compose.yml file, witch predefined Elastic Search with 3 nodes.
+To start just type:
+```docker-compose up```
+But you are good to go with ElasticSearch instance on your own pc or even somewhere remote.
+
+---
+
 ## Parse module
 To parse, specify `parse` command into the app:
 
