@@ -1,1 +1,1 @@
-java -jar lib/sk.vinf.cli-app.jar %*
+java -jar lib/cli-app.jar %*
