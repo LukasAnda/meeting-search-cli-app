@@ -5,12 +5,28 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.jakewharton.picnic.TextAlignment
 import com.jakewharton.picnic.table
 import com.jillesvangurp.eskotlinwrapper.JacksonModelReaderAndWriter
-import com.jillesvangurp.eskotlinwrapper.dsl.MatchQuery
+import com.jillesvangurp.eskotlinwrapper.dsl.*
 import org.elasticsearch.action.search.dsl
 import org.elasticsearch.client.create
 import org.elasticsearch.client.indexRepository
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder
 
 object Finder {
+    @SearchDSLMarker
+    class MatchPhraseQuery(
+        field: String,
+        query: String,
+        matchQueryConfig: MatchQueryConfig = MatchQueryConfig(),
+        block: (MatchQueryConfig.() -> Unit)? = null
+    ) : ESQuery(name = "match_phrase") {
+        // The map is empty until we assign something
+        init {
+            putNoSnakeCase(field, matchQueryConfig)
+            matchQueryConfig.query = query
+            block?.invoke(matchQueryConfig)
+        }
+    }
+
     fun search(host: String, port: Int, firstName: String, secondName: String){
         val client = create(host = host, port = port)
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
@@ -21,7 +37,11 @@ object Finder {
 
         val group1 = repo.search {
             dsl {
-                query = MatchQuery(field = "name", query = firstName)
+                query = if(firstName.contains("\"")){
+                    MatchPhraseQuery("name", firstName.replace("\"", ""))
+                } else {
+                    MatchQuery("name", firstName)
+                }
             }
         }.hits.map {
             it.second
@@ -29,7 +49,11 @@ object Finder {
 
         val group2 = repo.search {
             dsl {
-                query = MatchQuery(field = "name", query = secondName)
+                query = if(secondName.contains("\"")){
+                    MatchPhraseQuery("name", secondName.replace("\"", ""))
+                } else {
+                    MatchQuery("name", secondName)
+                }
             }
         }.hits.map {
             it.second
@@ -49,16 +73,17 @@ object Finder {
                     border = true
                     alignment = TextAlignment.BottomCenter
                 }
-                row {
-                    cell("") {
-                        rowSpan = 2
-                    }
-                    cell("Have these people met?") {
-                        alignment = TextAlignment.BottomCenter
-                        columnSpan = group2.size
-                    }
-                }
+//                row {
+//                    cell("") {
+//                        rowSpan = 2
+//                    }
+//                    cell("Have these people met?") {
+//                        alignment = TextAlignment.BottomCenter
+//                        columnSpan = group2.size
+//                    }
+//                }
                 row{
+                    cell("")
                     group2.forEach {
                         cell(it.name)
                     }
